@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Plant Green House</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" id="loginForm">
+        <h2>Smart Plant Green House</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="loginBtn">Login</button>
+    </div>
+ 
+    <div class="container" id="dashboard" style="display:none;">
+        <h2>Smart Plant Green House</h2>
+ 
+        <div class="sensor-box">
+            <h3>Kelembaban Tanah (%)</h3>
+            <div class="value" id="soilMoisture">0</div>
+            <div class="status" id="soilStatus">-</div>
+        </div>
+ 
+        <div class="sensor-box">
+            <h3>Tingkat Cahaya (LUX)</h3>
+            <div class="value" id="lightLevel">0</div>
+            <div class="status" id="lightStatus">-</div>
+        </div>
+ 
+        <div class="sensor-box">
+            <h3>Gerakan (PIR)</h3>
+            <div class="value" id="motion">0</div>
+            <div class="status" id="motionStatus">-</div>
+        </div>
+ 
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+ 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import {
+            getDatabase,
+            ref,
+            onValue
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+ 
+        const firebaseConfig = {
+            apiKey: "AIzaSyCXqEOXjmWjZss0yBSALdfaBomDNueZcmI",
+            authDomain: "project-iot-8fb63.firebaseapp.com",
+            projectId: "project-iot-8fb63",
+            storageBucket: "project-iot-8fb63.firebasestorage.app",
+            messagingSenderId: "665099409908",
+            appId: "1:665099409908:web:f3394c57f8ce938f22c1a1",
+            databaseURL: "https://project-iot-8fb63-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+ 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+ 
+        document.getElementById("loginBtn").addEventListener("click", () => {
+            const email = document.getElementById("email").value;
+            const pass = document.getElementById("password").value;
+ 
+            signInWithEmailAndPassword(auth, email, pass)
+            .then(() => {
+                loginForm.style.display = "none";
+                dashboard.style.display = "block";
+                listenToSensors();
+            })
+            .catch(err => alert("Login gagal: " + err.message));
+        });
+ 
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            signOut(auth).then(() => {
+                dashboard.style.display = "none";
+                loginForm.style.display = "block";
+            });
+        });
+ 
+        function listenToSensors() {
+            const sensorRef = ref(db, "greenhouse/sensors");
+            onValue(sensorRef, (snapshot) => {
+                const s = snapshot.val() || {};
+                updateSoil(s.soilMoisture);
+                updateLight(s.lightLevel);
+                updateMotion(s.motion);
+            });
+        }
+ 
+        function updateSoil(value) {
+            document.getElementById("soilMoisture").innerText = value + "%";
+            let status = "";
+            if (value < 30) status = "Kering";
+            else if (value < 70) status = "Cukup";
+            else status = "Basah";
+            document.getElementById("soilStatus").innerText = status;
+        }
+ 
+        function updateLight(value) {
+            document.getElementById("lightLevel").innerText = value;
+            let status = "";
+            if (value < 30) status = "Redup";
+            else if (value < 70) status = "Cukup Terang";
+            else status = "Terang";
+            document.getElementById("lightStatus").innerText = status;
+        }
+ 
+        function updateMotion(value) {
+            document.getElementById("motion").innerText = value;
+            let status = value == 1 ? "Terdeteksi" : "Tidak Terdeteksi";
+            document.getElementById("motionStatus").innerText = status;
+        }
+    </script>
+</body>
+</html>
